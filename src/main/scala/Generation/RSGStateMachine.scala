@@ -7,8 +7,8 @@
  *   either express or implied.  See the License for the specific language governing permissions and limitations under the License.
  *
  */
+package vvakic2.uic.cs441
 package Generation
-
 
 import HelperUtils.Parameters
 import HelperUtils.Parameters.logger
@@ -19,17 +19,25 @@ import scala.util.Random
 //this is a workhorse of the random string generator - it generates instances of the
 //regex pattern and inserts them at random intervals into the generated strings.
 case class RandomStringGenerator(val lengthRange: Tuple2[Int, Int], val seed: Long) {
-  private val rg = new Random(seed)
+  private val rg       = new Random(seed)
   val generex: Generex = new Generex(Parameters.generatingPattern)
 
-  private def constructString(inp:String, len: Int): String =
-    if len <= 0 then inp else constructString(inp+rg.nextPrintableChar, len - 1)
+  private def constructString(inp: String, len: Int): String =
+    if len <= 0 then inp else constructString(inp + rg.nextPrintableChar, len - 1)
 
-  def  next: Tuple2[RandomStringGenerator, String] =
-    val length =  rg.nextInt(lengthRange._2) + lengthRange._1
-    val patternString = constructString(rg.nextPrintableChar().toString, length/2).concat(if rg.nextFloat() < Parameters.patternFrequency then generex.random() else "")
-    val resultString = patternString + constructString(rg.nextPrintableChar().toString, length/2)
-    (RandomStringGenerator(lengthRange, if (resultString.hashCode > seed) resultString.hashCode - seed else resultString.hashCode + seed), resultString)
+  def next: Tuple2[RandomStringGenerator, String] =
+     val length = rg.nextInt(lengthRange._2) + lengthRange._1
+     val patternString = constructString(rg.nextPrintableChar().toString, length / 2)
+       .concat(if rg.nextFloat() < Parameters.patternFrequency then generex.random() else "")
+     val resultString = patternString + constructString(rg.nextPrintableChar().toString, length / 2)
+     (
+       RandomStringGenerator(
+         lengthRange,
+         if (resultString.hashCode > seed) resultString.hashCode - seed
+         else resultString.hashCode + seed
+       ),
+       resultString
+     )
 }
 
 //A monadic implementation of the state machine - will use CATS later - it takes a function
@@ -40,8 +48,8 @@ object RSGStateMachine {
 
   def unit(str: String): RSGFunction = rsg => rsg.next
 
-  def map(state: RSGFunction)(logThisString: String => String): RSGFunction = {
-    rsg => {
+  def map(state: RSGFunction)(logThisString: String => String): RSGFunction = { rsg =>
+    {
       val (rsgNext, strValue) = state(rsg)
       (rsgNext, logThisString(strValue))
     }
